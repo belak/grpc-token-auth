@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate log;
+
 use anyhow::Context;
 use futures::FutureExt;
 use http::Uri;
@@ -14,6 +17,8 @@ use crate::proto::{EchoRequest, EchoResponse};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    pretty_env_logger::init();
+
     let token = std::env::var("TOKEN").context("missing TOKEN variable")?;
     let url = std::env::var("ECHO_URL").unwrap_or_else(|_| "http://localhost:8000".to_string());
 
@@ -22,7 +27,7 @@ async fn main() -> anyhow::Result<()> {
 
     match uri.scheme_str() {
         None | Some("https") => {
-            println!("Enabling TLS");
+            debug!("Enabling TLS");
             channel_builder =
                 channel_builder.tls_config(ClientTlsConfig::new().domain_name(uri.host().unwrap()));
         }
@@ -47,17 +52,21 @@ async fn main() -> anyhow::Result<()> {
         .await?
         .into_inner();
 
-    println!("got echo response: {}", resp.message);
+    info!("got echo response: {}", resp.message);
 
-    let (outbound_sender, outbound_receiver) = mpsc::channel(1);
+    let (outbound_sender, outbound_receiver) = mpsc::channel(10);
+
+    debug!("starting stream");
 
     let resp = client
         .streaming_echo(Request::new(outbound_receiver))
         .await?;
 
+    debug!("got stream");
+
     futures::future::try_join_all(vec![
-        handle_inbound(resp.into_inner()).boxed(),
-        handle_outbound(outbound_sender).boxed(),
+        tokio::spawn(handle_inbound(resp.into_inner()).boxed()),
+        tokio::spawn(handle_outbound(outbound_sender).boxed()),
     ])
     .await?;
 
@@ -66,7 +75,7 @@ async fn main() -> anyhow::Result<()> {
 
 async fn handle_inbound(mut input: tonic::Streaming<EchoResponse>) -> anyhow::Result<()> {
     while let Some(resp) = input.message().await? {
-        println!("got streaming echo response: {}", resp.message);
+        info!("got streaming echo response: {}", resp.message);
     }
 
     Ok(())
@@ -76,7 +85,7 @@ async fn handle_outbound(
     mut output: mpsc::Sender<crate::proto::EchoRequest>,
 ) -> anyhow::Result<()> {
     for i in 0..5 {
-        println!("sending stream request: {}", i);
+        debug!("sending stream request: {}", i);
 
         output
             .send(EchoRequest {
