@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -67,6 +68,8 @@ func (s *Server) unaryAuthInterceptor(ctx context.Context, req interface{}, info
 		return nil, err
 	}
 
+	fmt.Println(info.FullMethod)
+
 	return handler(ctx, req)
 }
 
@@ -75,6 +78,8 @@ func (s *Server) streamAuthInterceptor(srv interface{}, stream grpc.ServerStream
 	if err != nil {
 		return err
 	}
+
+	fmt.Println(info.FullMethod)
 
 	return handler(srv, stream)
 }

@@ -1,1 +1,2 @@
 pb/*.pb.go
+clients/rust/target

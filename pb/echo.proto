@@ -2,6 +2,8 @@ syntax = "proto3";
 
 option go_package = ".;pb";
 
+package echo;
+
 message EchoRequest {
   string message = 1;
 }

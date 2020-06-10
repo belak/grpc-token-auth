@@ -38,7 +38,7 @@ func main() {
 	}
 
 	client, err := NewClient(ClientConfig{
-		DialTimeout: 1 * time.Second,
+		DialTimeout: 5 * time.Second,
 		Token:       Env("TOKEN"),
 		Addr:        EnvDefault("SERVER_ADDR", "localhost:8000"),
 		Insecure:    insecure,
@@ -62,6 +62,8 @@ func main() {
 	}
 
 	for i := 0; i < 5; i++ {
+		time.Sleep(1)
+
 		err := stream.Send(&pb.EchoRequest{Message: "hello world " + strconv.Itoa(i)})
 		if err != nil {
 			log.Fatalf("failed to send stream request %d: %s", i, err)
