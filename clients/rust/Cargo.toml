@@ -1,0 +1,17 @@
+[package]
+name = "grpc-auth-token-client"
+version = "0.1.0"
+authors = ["Kaleb Elwert <belak@coded.io>"]
+edition = "2018"
+
+[dependencies]
+anyhow = "1.0"
+bytes = "0.5"
+futures = "0.3"
+http = "0.2"
+prost = "0.6"
+tokio = { version = "0.2", features = ["macros", "rt-core", "sync"] }
+tonic = { version = "0.2", features = ["tls", "tls-roots"] }
+
+[build-dependencies]
+tonic-build = { version = "0.2", features = ["prost"] }
