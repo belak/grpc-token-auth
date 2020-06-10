@@ -1,3 +1,3 @@
-//go:generate protoc --go_out=plugins=grpc:./ echo.proto
+//go:generate protoc --go-grpc_opt=requireUnimplementedServers=false --go_out=. --go-grpc_out=. echo.proto
 
 package pb

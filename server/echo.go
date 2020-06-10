@@ -6,12 +6,9 @@ import (
 	"github.com/belak/grpc-token-auth/pb"
 )
 
-func init() {
-	// Ensure this server actually implements the EchoServiceServer interface.
-	// This is particularly useful if we're exporting it out of this package.
-	var s *Server = nil
-	var _ pb.EchoServiceServer = s
-}
+// Ensure this server actually implements the EchoServiceServer interface. This
+// is particularly useful if we're exporting it out of this package.
+var _ pb.EchoServiceServer = (*Server)(nil)
 
 func (s *Server) Echo(ctx context.Context, req *pb.EchoRequest) (*pb.EchoResponse, error) {
 	return &pb.EchoResponse{

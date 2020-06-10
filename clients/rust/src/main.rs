@@ -39,9 +39,11 @@ async fn main() -> anyhow::Result<()> {
         .await
         .context("Failed to connect to echo service")?;
 
+    let auth_header = format!("Bearer {}", token).parse()?;
+
     let mut client = EchoServiceClient::with_interceptor(channel, move |mut req: Request<()>| {
         req.metadata_mut()
-            .insert("auth_token", token.parse().unwrap());
+            .insert("authorization", auth_header);
         Ok(req)
     });
 

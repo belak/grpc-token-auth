@@ -49,12 +49,17 @@ func (s *Server) authenticate(ctx context.Context) error {
 		return status.Error(codes.Unauthenticated, "missing request metadata")
 	}
 
-	authTokens := md.Get("auth_token")
+	authTokens := md.Get("authorization")
 	if len(authTokens) != 1 {
 		return status.Errorf(codes.Unauthenticated, "wrong number of auth tokens: got %d, expected 1", len(authTokens))
 	}
 
 	authToken := authTokens[0]
+	if !strings.HasPrefix(authToken, "Bearer ") {
+		return status.Error(codes.Unauthenticated, "invalid token format")
+	}
+	authToken = strings.TrimPrefix(authToken, "Bearer ")
+
 	if authToken != "helloworld" {
 		return status.Error(codes.Unauthenticated, "invalid auth token")
 	}

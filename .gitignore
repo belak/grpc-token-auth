@@ -1,2 +1,5 @@
-pb/*.pb.go
+*.pb.go
 clients/rust/target
+.python-version
+*_pb2.py
+*_pb2_grpc.py
