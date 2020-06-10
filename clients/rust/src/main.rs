@@ -13,7 +13,7 @@ pub mod proto {
 }
 
 use crate::proto::echo_service_client::EchoServiceClient;
-use crate::proto::{EchoRequest, EchoResponse};
+use crate::proto::EchoRequest;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -56,24 +56,28 @@ async fn main() -> anyhow::Result<()> {
 
     let (outbound_sender, outbound_receiver) = mpsc::channel(10);
 
-    debug!("starting stream");
-
-    let resp = client
-        .streaming_echo(Request::new(outbound_receiver))
-        .await?;
-
-    debug!("got stream");
-
     futures::future::try_join_all(vec![
-        tokio::spawn(handle_inbound(resp.into_inner()).boxed()),
-        tokio::spawn(handle_outbound(outbound_sender).boxed()),
+        handle_inbound(client, outbound_receiver).boxed(),
+        handle_outbound(outbound_sender).boxed(),
     ])
     .await?;
 
     Ok(())
 }
 
-async fn handle_inbound(mut input: tonic::Streaming<EchoResponse>) -> anyhow::Result<()> {
+async fn handle_inbound(
+    mut client: EchoServiceClient<Channel>,
+    outbound_receiver: mpsc::Receiver<crate::proto::EchoRequest>,
+) -> anyhow::Result<()> {
+    debug!("starting stream");
+
+    let mut input = client
+        .streaming_echo(Request::new(outbound_receiver))
+        .await?
+        .into_inner();
+
+    debug!("got stream");
+
     while let Some(resp) = input.message().await? {
         info!("got streaming echo response: {}", resp.message);
     }

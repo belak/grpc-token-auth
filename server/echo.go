@@ -20,6 +20,14 @@ func (s *Server) Echo(ctx context.Context, req *pb.EchoRequest) (*pb.EchoRespons
 }
 
 func (s *Server) StreamingEcho(stream pb.EchoService_StreamingEchoServer) error {
+	// Flush the headers. This is not strictly required, but it makes it easier
+	// to write clients for some languages because you can start the stream (and
+	// start writing to it) without waiting for the server to send messages.
+	err := stream.SendHeader(nil)
+	if err != nil {
+		return err
+	}
+
 	for {
 		req, err := stream.Recv()
 		if err != nil {
