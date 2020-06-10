@@ -10,6 +10,9 @@ import (
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 
 	"github.com/belak/grpc-token-auth/pb"
 )
@@ -39,11 +42,40 @@ func NewServer(config ServerConfig) *Server {
 	return s
 }
 
-func (s *Server) unaryAuthInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+func (s *Server) authenticate(ctx context.Context) error {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return status.Error(codes.Unauthenticated, "missing request metadata")
+	}
+
+	authTokens := md.Get("auth_token")
+	if len(authTokens) != 1 {
+		return status.Errorf(codes.Unauthenticated, "wrong number of auth tokens: got %d, expected 1", len(authTokens))
+	}
+
+	authToken := authTokens[0]
+	if authToken != "helloworld" {
+		return status.Error(codes.Unauthenticated, "invalid auth token")
+	}
+
+	return nil
+}
+
+func (s *Server) unaryAuthInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	err := s.authenticate(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	return handler(ctx, req)
 }
 
 func (s *Server) streamAuthInterceptor(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	err := s.authenticate(stream.Context())
+	if err != nil {
+		return err
+	}
+
 	return handler(srv, stream)
 }
 
